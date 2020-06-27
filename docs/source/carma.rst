@@ -232,6 +232,44 @@ To pass the return value policy set it in the binding function:
 
     m.def("example_function", &example_function, return_value_policy::copy);
 
+##########
+ArrayStore
+##########
+
+ArrayStore is a convenience class for storing the memory in a C++ class.
+
+.. warning:: 
+    The ArrayStore owns the data, the returned numpy arrays are views that
+    are tied to the lifetime of ArrayStore.
+
+.. class:: ArrayStore
+
+       .. attribute:: mat arma::Matrix<T>
+           
+           Matrix containing the memory of the array.
+
+       .. method:: ArrayStore(py::array_t<T> & arr, bool steal, bool writeable)
+
+           Class constructor
+
+           :param arr: Numpy array to be stored as Armadillo matrix
+           :param steal: Take ownership of the array, else copy
+           :param writeable: Mark memory as writeable
+
+       .. method:: get_view(bool writeable)
+
+           Obtain a view of the memory as Numpy array.
+
+           :param writeable: Mark array as writeable
+
+       .. method:: set_data(py::array_t<T> & arr, bool steal, bool writeable)
+
+           Store new array in the ArrayStore.
+
+           :param arr: Numpy array to be stored as Armadillo matrix
+           :param steal: Take ownership of the array, else copy
+           :param writeable: Mark memory as writeable
+
 #############
 NdArray flags
 #############
