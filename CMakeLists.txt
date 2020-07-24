@@ -21,6 +21,7 @@ ENDIF()
 
 OPTION(BUILD_TESTS "Build tests for carma" OFF)
 OPTION(BUILD_EXAMPLES "Build examples for carma" OFF)
+
 # ##############################################################################
 #                                 DEFINITIONS                                  #
 # ##############################################################################
@@ -47,11 +48,15 @@ endif ()
 SET(PROJECT_RELEASE_DEFINITIONS ARMA_NO_DEBUG)
 # see linkg for a more expensive approach https://github.com/VcDevel/Vc/blob/master/cmake/OptimizeForArchitecture.cmake
 
+find_package(Armadillo REQUIRED)
+find_package(pybind11 REQUIRED)
 
 ADD_LIBRARY(carma INTERFACE)
-TARGET_LINK_LIBRARIES(carma INTERFACE pybind11 armadillo)
+TARGET_LINK_LIBRARIES(carma INTERFACE ${pybind11_LIBRARIES} ${ARMADILLO_LIBRARIES})
 TARGET_INCLUDE_DIRECTORIES(carma
         INTERFACE
+        ${pybind11_INCLUDE_DIRS}
+        ${ARMADILLO_INCLUDE_DIRS}
         # path of the headers after installation
         $<INSTALL_INTERFACE:include> # <prefix>/include/carma
         # path of the headers before installation
@@ -72,42 +77,7 @@ if (VALGRIND_TEST_WRAPPER)
     MESSAGE(STATUS "Valgrind test mode enabled")
 endif()
 
-IF (BUILD_TESTS OR BUILD_EXAMPLES)
-    # ##############################################################################
-    #                             THIRD PARTY LIBS                                 #
-    # ##############################################################################
-    # Use a header only version of armadillo; default CMake project is not header only
-    # That's why we use a custom 'armadillo' target with only include directory
-    if(NOT TARGET armadillo)
-        if (ARMADILLO_ROOT_DIR)
-            #add_subdirectory(${ARMADILLO_ROOT_DIR} armadillo-code)
-            SET(ARMADILLO_INCLUDE_DIR ${ARMADILLO_ROOT_DIR}/include)
-        else()
-            #add_subdirectory(third_party/armadillo-code)
-            SET(ARMADILLO_INCLUDE_DIR third_party/armadillo-code/include)
-        endif()
-        ADD_LIBRARY(armadillo INTERFACE)
-        target_include_directories(armadillo INTERFACE ${ARMADILLO_INCLUDE_DIR})
-    endif()
-
-    if(NOT TARGET pybind11)
-        if (PYTHON_PREFIX_PATH)
-            set(CMAKE_PREFIX_PATH_SAVED ${CMAKE_PREFIX_PATH})
-            list(APPEND CMAKE_PREFIX_PATH ${PYTHON_PREFIX_PATH})
-        endif()
-        if (PYBIND11_ROOT_DIR)
-            add_subdirectory(${PYBIND11_ROOT_DIR} pybind11)
-        else()
-            add_subdirectory(third_party/pybind11)
-        endif()
-        if (CMAKE_PREFIX_PATH_SAVED)
-            set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH_SAVED})
-            unset(CMAKE_PREFIX_PATH_SAVED)
-        endif()
-    endif()
-    
-    ENABLE_TESTING()
-ENDIF()
+ENABLE_TESTING()
 
 IF(BUILD_TESTS)
     add_subdirectory(tests)
@@ -153,3 +123,28 @@ if(NOT DEFINED CARMA_DEV_TARGET OR CARMA_DEV_TARGET)
                 )
     endif ()
 endif()
+
+#
+# Install support
+#
+include(CMakePackageConfigHelpers)
+set(carma_INCLUDE_DIR include/
+  CACHE PATH "The directory where carma headers are installed")
+set(carma_CONFIG_CMAKE_PATH lib${LIB_SUFFIX}/cmake/carma
+  CACHE PATH "The directory where the CMake files are installed")
+
+configure_package_config_file(carmaConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/carmaConfig.cmake
+  INSTALL_DESTINATION ${carma_CONFIG_CMAKE_PATH}
+  PATH_VARS carma_INCLUDE_DIR)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/carmaConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+
+# Install targets
+install(DIRECTORY include/carma DESTINATION include)
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/carmaConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/carmaConfigVersion.cmake
+  DESTINATION ${carma_CONFIG_CMAKE_PATH})

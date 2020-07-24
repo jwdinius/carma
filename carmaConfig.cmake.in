@@ -1,0 +1,14 @@
+#                                               -*- cmake -*-
+#
+#  carmaConfig.cmake
+
+# Use the following variables to compile and link against Kalman:
+#
+#  carma_FOUND              - True if carma was found on your system
+#  carma_INCLUDE_DIR        - Directory where Kalman headers can be found
+
+# Placeholder required for @PACKAGE_...@ substitution
+@PACKAGE_INIT@
+
+set(carma_FOUND 1)
+set(carma_INCLUDE_DIR  "@PACKAGE_CARMA_INCLUDE_DIR@")
